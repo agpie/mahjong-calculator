@@ -1,79 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Mahjong Payment Calculator</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 400px;
-      margin: auto;
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-    }
-
-    button {
-      margin-top: 10px;
-      width: 100%;
-      padding: 10px;
-      font-size: 16px;
-    }
-
-    .result {
-      margin-top: 15px;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<title>Beifang 2-4-8 Mahjong Scorer</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  fieldset { margin-bottom: 15px; }
+  label { display: block; margin-bottom: 5px; }
+  .result { margin-top: 20px; font-weight: bold; }
+</style>
 </head>
 <body>
 
-  <div class="container">
-    <h2>Mahjong Payment Calculator</h2>
+<h1>Beifang 2-4-8 Mahjong Scorer</h1>
 
-    <label>Winner:</label>
-    <select id="winner">
-      <option value="A">Player A</option>
-      <option value="B">Player B</option>
-      <option value="C">Player C</option>
-      <option value="D">Player D</option>
-    </select>
+<form id="mahjongForm">
 
-    <label>Base Hand Value:</label>
-    <input type="number" id="handValue" placeholder="e.g. 10">
+  <fieldset>
+    <legend>Winner</legend>
+    <label><input type="radio" name="winner" value="normal" checked> Normal (闲家, xián jiā)</label>
+    <label><input type="radio" name="winner" value="zhuang"> Dealer / Zhuang (庄, zhuāng)</label>
+  </fieldset>
 
-    <button onclick="calculate()">Calculate</button>
+  <fieldset>
+    <legend>Dian Pao / Zi Mo</legend>
+    <label><input type="radio" name="winType" value="ziMo" checked> Zi Mo (自摸, zì mō)</label>
+    <label><input type="radio" name="winType" value="dianPao"> Dian Pao (点炮, diǎn pào)</label>
+  </fieldset>
 
-    <div class="result" id="result"></div>
-  </div>
+  <fieldset id="dianPaoFromFieldset">
+    <legend>If winner is normal and Dian Pao, who discards?</legend>
+    <label><input type="radio" name="dianPaoFrom" value="otherNormal" checked> Other normal (闲家, xián jiā)</label>
+    <label><input type="radio" name="dianPaoFrom" value="zhuang"> Dealer / Zhuang (庄, zhuāng)</label>
+  </fieldset>
 
-  <script>
-    function calculate() {
-      const winner = document.getElementById("winner").value;
-      const handValue = Number(document.getElementById("handValue").value);
+  <fieldset>
+    <legend>Multipliers (select all that apply)</legend>
+    <label><input type="checkbox" name="multiplier" value="menQing"> Men Qing (门清, mén qīng)</label>
+    <label><input type="checkbox" name="multiplier" value="qingYiSe"> Qing Yi Se (清一色, qīng yī sè)</label>
+    <label><input type="checkbox" name="multiplier" value="qiDui"> Qi Dui (七对, qī duì)</label>
+  </fieldset>
 
-      if (!handValue || handValue <= 0) {
-        document.getElementById("result").innerText = "Please enter a valid hand value.";
-        return;
+  <fieldset>
+    <legend>Gang (杠, gàng)</legend>
+    <label>Number of gangs: <input type="number" name="gangCount" min="0" value="0"></label>
+    <label><input type="checkbox" id="anGangCheckbox"> Concealed gang (暗杠, àn gàng) (automatic if Men Qing selected)</label>
+  </fieldset>
+
+  <button type="button" id="calculateBtn">Calculate Points</button>
+</form>
+
+<div class="result" id="result"></div>
+
+<script>
+const RULES = {
+  baseWin: {
+    nonDealer: { nonDealerPays: 2, dealerPays: 4 },
+    dealer: { nonDealerPays: 4 }
+  },
+  dianPao: {
+    dealerDiscards: 12,
+    nonDealerDiscardsForDealer: 16
+  },
+  multipliers: { menQing: 2, qingYiSe: 2, qiDui: 2 },
+  gang: { nonDealerBase: 8, dealerBase: 12, anGangMultiplier: 2, mingGangMultiplier: 1 }
+};
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("mahjongForm");
+  const resultDiv = document.getElementById("result");
+  const dianPaoFieldset = document.getElementById("dianPaoFromFieldset");
+  const anGangCheckbox = document.getElementById("anGangCheckbox");
+
+  // Show/hide dian pao source if winType changes
+  form.winType.forEach(radio => {
+    radio.addEventListener("change", () => {
+      dianPaoFieldset.style.display = form.winType.value === "dianPao" ? "block" : "none";
+    });
+  });
+
+  // Auto-check anGang if menQing is selected
+  form.multiplier.forEach(cb => {
+    cb.addEventListener("change", () => {
+      if (form.multiplier[0].checked) { // menQing
+        anGangCheckbox.checked = true;
+        anGangCheckbox.disabled = true;
+      } else {
+        anGangCheckbox.disabled = false;
       }
+    });
+  });
 
-      const players = ["A", "B", "C", "D"];
-      let output = "";
+  document.getElementById("calculateBtn").addEventListener("click", () => {
+    const winnerType = form.winner.value; // normal / zhuang
+    const winType = form.winType.value;   // ziMo / dianPao
+    const dianPaoFrom = form.dianPaoFrom?.value || null;
+    const gangCount = parseInt(form.gangCount.value) || 0;
+    const isAnGang = anGangCheckbox.checked;
 
-      players.forEach(player => {
-        if (player !== winner) {
-          output += `Player ${player} pays ${handValue}\n`;
+    // Multipliers
+    let multiplier = 1;
+    form.multiplier.forEach(cb => { if (cb.checked) multiplier *= RULES.multipliers[cb.value]; });
+
+    // Initialize points for 4 players
+    const points = [0,0,0,0]; // index 0 = winner for simplicity
+
+    // ----------------------
+    // Calculate base win
+    // ----------------------
+    if (winType === "dianPao") {
+      if (winnerType === "zhuang") {
+        // Dealer wins on any discard
+        if (dianPaoFrom === "otherNormal") {
+          points[0] += RULES.dianPao.nonDealerDiscardsForDealer * multiplier;
+          points[1] -= RULES.dianPao.nonDealerDiscardsForDealer * multiplier;
+        } else if (dianPaoFrom === "zhuang") {
+          points[0] += RULES.dianPao.dealerDiscards * multiplier;
+          points[0] -= RULES.dianPao.dealerDiscards * multiplier; // dealer pays
         }
-      });
-
-      document.getElementById("result").innerText = output;
+      } else {
+        // Non-dealer wins by dian pao
+        if (dianPaoFrom === "otherNormal") {
+          // Other normal pays 2, dealer pays 4
+          points[0] += RULES.baseWin.nonDealer.nonDealerPays * multiplier + RULES.baseWin.nonDealer.dealerPays * multiplier;
+          points[1] -= RULES.baseWin.nonDealer.nonDealerPays * multiplier;
+          points[2] -= RULES.baseWin.nonDealer.dealerPays * multiplier;
+        } else if (dianPaoFrom === "zhuang") {
+          points[0] += RULES.dianPao.dealerDiscards * multiplier;
+          points[3] -= RULES.dianPao.dealerDiscards * multiplier; // zhuang index
+        }
+      }
+    } else {
+      // ziMo
+      if (winnerType === "zhuang") {
+        points[0] += RULES.baseWin.dealer.nonDealerPays * 3 * multiplier;
+        points[1] -= RULES.baseWin.dealer.nonDealerPays * multiplier;
+        points[2] -= RULES.baseWin.dealer.nonDealerPays * multiplier;
+        points[3] -= RULES.baseWin.dealer.nonDealerPays * multiplier;
+      } else {
+        points[0] += (RULES.baseWin.nonDealer.nonDealerPays * 2 + RULES.baseWin.nonDealer.dealerPays) * multiplier;
+        points[1] -= RULES.baseWin.nonDealer.nonDealerPays * multiplier;
+        points[2] -= RULES.baseWin.nonDealer.nonDealerPays * multiplier;
+        points[3] -= RULES.baseWin.nonDealer.dealerPays * multiplier;
+      }
     }
-  </script>
+
+    // ----------------------
+    // Add gang scoring (winner only)
+    // ----------------------
+    if (gangCount > 0) {
+      const gangBase = winnerType === "zhuang" ? RULES.gang.dealerBase : RULES.gang.nonDealerBase;
+      const gangMultiplier = isAnGang ? RULES.gang.anGangMultiplier : RULES.gang.mingGangMultiplier;
+      const totalGang = gangCount * gangBase * gangMultiplier;
+      const eachPlayerPay = totalGang / 3;
+      for (let i = 1; i < 4; i++) {
+        points[i] -= eachPlayerPay;
+        points[0] += eachPlayerPay;
+      }
+    }
+
+    // ----------------------
+    // Display results
+    // ----------------------
+    resultDiv.innerHTML = `
+      <h3>Round Results:</h3>
+      <ul>
+        <li>Winner: ${points[0]} points</li>
+        <li>Player 2: ${points[1]} points</li>
+        <li>Player 3: ${points[2]} points</li>
+        <li>Player 4: ${points[3]} points</li>
+      </ul>
+    `;
+  });
+});
+</script>
 
 </body>
 </html>

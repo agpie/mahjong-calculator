@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Mahjong Calculator</title>
+</head>
+<body>
+
+  <h1>Mahjong Calculator</h1>
+
+  <table>
+    <tr>
+      <th>Seat</th>
+      <th>Zhuang (庄)</th>
+      <th>Winner (胡)</th>
+    </tr>
+  
+    <tr>
+      <td>East (东 dōng)</td>
+      <td><input type="radio" name="zhuang" value="east"></td>
+      <td><input type="radio" name="winner" value="east"></td>
+    </tr>
+  
+    <tr>
+      <td>South (南 nán)</td>
+      <td><input type="radio" name="zhuang" value="south"></td>
+      <td><input type="radio" name="winner" value="south"></td>
+    </tr>
+  
+    <tr>
+      <td>West (西 xī)</td>
+      <td><input type="radio" name="zhuang" value="west"></td>
+      <td><input type="radio" name="winner" value="west"></td>
+    </tr>
+  
+    <tr>
+      <td>North (北 běi)</td>
+      <td><input type="radio" name="zhuang" value="north"></td>
+      <td><input type="radio" name="winner" value="north"></td>
+    </tr>
+  </table>
+  
+  <h2>Winning Tile Source</h2>
+  
+  <label>
+    <input type="radio" name="tileSource" value="none">
+    Nobody (Zi Mo 自摸 zì mō)
+  </label><br>
+  
+  <label>
+    <input type="radio" name="tileSource" value="east">
+    East (东 dōng)
+  </label><br>
+  
+  <label>
+    <input type="radio" name="tileSource" value="south">
+    South (南 nán)
+  </label><br>
+  
+  <label>
+    <input type="radio" name="tileSource" value="west">
+    West (西 xī)
+  </label><br>
+  
+  <label>
+    <input type="radio" name="tileSource" value="north">
+    North (北 běi)
+  </label>
+  
+  <h2>Multipliers (翻 fān)</h2>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="menQing">
+    Men Qing (门清 mén qīng – concealed hand)
+  </label><br>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="daDiao">
+    Da Diao (大吊 dà diào – all melds exposed, pair wait)
+  </label><br>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="zhuoWuKui">
+    Zhuo Wu Kui (捉五魁 zhuō wǔ kuí – winning on 5-wan)
+  </label><br>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="yiTiaoLong">
+    Yi Tiao Long (一条龙 yī tiáo lóng – 1–9 straight)
+  </label><br>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="qiDui">
+    Qi Dui (七对 qī duì – seven pairs)
+  </label><br>
+  
+  <label>
+    <input type="checkbox" name="multiplier" value="qingYiSe">
+    Qing Yi Se (清一色 qīng yī sè – one suit)
+  </label>
+  
+  <h2>Gang (杠 gàng)</h2>
+  
+  <label>
+    Ming Gang (明杠 míng gàng):
+    <input type="number" name="mingGang" min="0" value="0">
+  </label><br><br>
+  
+  <label>
+    An Gang (暗杠 àn gàng):
+    <input type="number" name="anGang" min="0" value="0">
+  </label>
+  
+  <div id="result">
+    <em>Round results will appear here</em>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
